@@ -8,16 +8,26 @@ use Illuminate\Http\Request;
 
 class WatchlistController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, \App\Services\TmdbService $tmdb): JsonResponse
     {
         $watchlists = $request->user()
             ->watchlists()
             ->latest()
             ->paginate(15);
 
+        // Get TMDB data for these movie IDs
+        $movieIds = collect($watchlists->items())->pluck('movie_id')->toArray();
+        $tmdbMovies = collect($tmdb->getMoviesByIds($movieIds))->keyBy('id');
+
+        // Combine DB watchlist data with TMDB data
+        $enrichedItems = collect($watchlists->items())->map(function ($item) use ($tmdbMovies) {
+            $movieData = $tmdbMovies->get($item->movie_id) ?? [];
+            return array_merge(['watchlist_id' => $item->id], $movieData);
+        })->toArray();
+
         return response()->json([
             'success' => true,
-            'data' => $watchlists->items(),
+            'data' => $enrichedItems,
             'meta' => [
                 'current_page' => $watchlists->currentPage(),
                 'last_page' => $watchlists->lastPage(),
