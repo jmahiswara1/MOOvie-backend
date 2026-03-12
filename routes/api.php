@@ -12,7 +12,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Public movie routes (rate limited, ORDER MATTERS - specific before wildcard)
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware('throttle:300,1')->group(function () {
     Route::get('/movies/search', [MovieController::class, 'search']);
     Route::get('/movies/detail/{id}', [MovieController::class, 'detail']);
     Route::get('/movies/{category}', [MovieController::class, 'getByCategory']);
